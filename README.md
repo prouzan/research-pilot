@@ -1,49 +1,45 @@
 # ResearchPilot：带声明级引用验证和多轮修订闭环的 AI 科研助手
 
 ## 1. 项目简介
-ResearchPilot 是一个面向科研调研场景的 AI research assistant。当前版本已经从早期的线性 demo 页面升级为一个中文科研工作台：顶部提供中文首页、统一 Research Discovery、Watchlist、PDF 入库、RAG QA、Paper Cards、Review、Workspace Chat 和 Current Library 等模块。
+ResearchPilot 是一个面向科研调研场景的 AI research assistant。当前版本提供中文网页工作台和本地 agent skill 两种入口，围绕 Research Discovery、Watchlist、PDF 入库、RAG QA、Paper Cards、Review、Workspace Chat 和 Current Library 组织完整科研流程。
 
-它支持从 topic 输入开始，完成 arXiv-only 快速搜索、CCF 会议/期刊方向搜集、OpenReview/OpenAlex/Semantic Scholar 元数据调研、PDF 下载与自动入库、PDF RAG 问答、论文卡片、论文比较、文献综述生成、声明级引用验证、保守改写、多轮修订、研究想法生成、个性化 watchlist、学者/课题组推荐、workspace chat 和本地 Codex/OpenCode agent 委托生成。
+系统以 topic 为统一文献发现入口：根据用户研究方向在 CCF 标准中查找相关会议/期刊，并结合会议/期刊网站、OpenReview、OpenAlex、Semantic Scholar、arXiv 和 Google Scholar follow-up links 搜集候选论文。之后可以把候选论文转为 metadata paper cards，下载/入库 PDF，进行本地证据检索、论文问答、结构化卡片、论文比较、综述生成、声明级引用验证、保守改写、多轮修订、研究想法生成、个性化 watchlist、学者/课题组追踪和 workspace chat。
 
-本项目是一个 **course-project prototype**。目标不是替代现有搜索引擎或专业文献管理工具，而是展示一个可落地的端到端科研调研 workflow，并将多个已有能力整合到同一条可追踪流程中。
+项目定位是 **course-project prototype**：重点展示一个可落地、可追踪、可复用的端到端科研调研 workflow，并把网页端、本地文献库、agent skill、LLM fallback 和人工审批步骤整合到同一个工作区中。
 
 完整流程如下：
 
-topic -> Research Discovery（arXiv-only 或默认多源检索）-> venue / scholar source collection -> metadata paper cards -> PDF download/ingest -> hybrid retrieval -> RAG QA -> bilingual paper cards -> paper labels / comparison table -> literature review -> claim verification -> conservative rewrite -> revised review -> research ideas -> workspace chat / report approval -> watchlist personalization
+topic -> Research Discovery（多源文献发现，可切换来源范围）-> CCF venue / scholar source collection -> metadata paper cards -> PDF download/ingest -> hybrid retrieval -> RAG QA -> bilingual paper cards -> paper labels / comparison table -> literature review -> claim verification -> conservative rewrite -> revised review -> research ideas -> workspace chat / report approval -> watchlist tracking
 
 ## 2. 核心功能概览
-- 中文首页与统一前端工作台：首页展示当前能力、数据资产、agent bridge 状态和主要工作流入口
-- Research Discovery 统一论文发现入口：开启 `只看 arXiv 结果` 时只做 arXiv 搜索、勾选下载和自动 ingest；关闭时使用默认多源配置，聚合会议/期刊、arXiv、OpenReview、OpenAlex、Semantic Scholar 等来源
-- CCF 会议/期刊方向搜集：按领域推断 NeurIPS/ICML/ICLR、CAV/POPL/PLDI 等 venue，调用 arXiv/OpenReview/OpenAlex 和可选 Semantic Scholar 搜集近期论文，并生成 Google Scholar 补查链接
-- 本地 PDF 上传与解析
-- BM25 + vector search 的 hybrid retrieval
-- 带 evidence citation 的 RAG QA
-- Paper Card 结构化论文理解：支持缓存、双语字段、紧凑卡片渲染、逐字段编辑、按标题选择论文和按 label 过滤
-- Paper Labels 本地管理：`data/outputs/paper_labels.json` 持久化论文类别，支持单篇标注、批量标注、只标注未分类论文、覆盖已有 label 和 agent-assisted labeling
-- 网页端 Research Discovery：从 topic 规划 CCF venue，聚合会议/期刊、arXiv、OpenReview、OpenAlex、Semantic Scholar 等结果，生成调研报告，并可把候选论文转成 metadata paper cards
-- 网页端 Workspace Chat：读取已缓存 paper cards、已入库论文、已有 topic/collection、watchlist 和已保存报告，支持预览、编辑并批准保存报告
-- Local Agent Bridge：网页端生成报告、双语 paper card、workspace chat 时可委托本机 Codex/OpenCode CLI，或落盘为 agent task 队列，不再只能依赖 `.env` 后端
+- 中文首页与统一前端工作台：首页展示当前能力、数据资产、agent bridge 状态和主要工作流入口。
+- Research Discovery 统一文献发现：围绕用户 topic 规划检索范围；默认聚合 CCF 相关会议/期刊、会议或期刊网站、OpenReview、OpenAlex、Semantic Scholar、arXiv 等来源；需要轻量查新时可用 `只看 arXiv 结果` 开关缩小来源范围。
+- CCF 会议/期刊搜集：根据 topic 和可选领域提示在 CCF 标准中选择相关会议/期刊，再到对应网站或开放学术检索源搜集论文，保留实际来源、目标 venue、Google Scholar 补查链接和结果不确定性说明。
+- 本地论文库：支持 PDF 上传、PDF 下载、自动 ingest、文本解析、chunk 存储和本地检索。
+- BM25 + vector search 的 hybrid retrieval，以及带 evidence citation 的 RAG QA。
+- Paper Card 结构化论文理解：支持缓存、双语字段、紧凑卡片渲染、逐字段编辑、按标题选择论文和按 label 过滤。
+- Paper Labels 本地管理：`data/outputs/paper_labels.json` 持久化论文类别，支持单篇标注、批量标注、只标注未分类论文、覆盖已有 label 和 agent-assisted labeling。
+- Metadata Paper Cards：对尚未下载 PDF 的候选论文先生成元数据级 paper card，便于用户筛选后再决定是否下载/精读。
+- Comparison Table 多论文比较：可加入 labels 列，并支持仅比较当前 label 过滤范围内的 paper cards。
+- Literature Review 工作流：基于 cards 生成综述，执行 claim-level citation verification，按 supported / weakly_supported / unsupported 状态做保守改写，并保留多版本 diff。
+- Personalized Watchlist：推荐相关学者、课题组和机构；对关注对象生成主页/学术索引，追踪近 6 个月论文，支持把候选论文加入 Library/Card 或从推荐页隐藏。
+- Workspace Chat：读取 paper cards、已入库论文、topic/collection、watchlist、watchlist tracking 和已保存报告，支持对话、比较多篇文章、草拟报告、预览和批准保存。
+- 本地 Agent Skill：除网页版本外，仓库提供 ResearchPilot 的 Codex/OpenCode skill 和 OpenCode tools；agent 可以直接调用本地检索、采集、卡片、综述准备和 watchlist tracking 能力。
+- Local Agent Bridge：网页端在 Research Discovery 报告、双语 paper card、paper labeling 和 Workspace Chat 等生成任务中可选择 backend `.env`、Codex、OpenCode、queue 或 deterministic fallback。
 - Paper Card 本地缓存（`data/outputs/paper_cards_cache.json`，避免重复生成）
   - 缓存默认跨重启保留；仅当同一会话内对同一 `paper_id` 重新 ingest 时，才会失效该论文缓存。
-- Comparison Table 多论文比较：可加入 labels 列，并支持仅比较当前 label 过滤范围内的 paper cards
-- Literature Review 生成
-- Claim-level Citation Verification
-- Conservative Rewrite Suggestions
-- 多版本 verify-then-rewrite 迭代
-- Future Research Ideas 生成
-- Personalized Watchlist 个性化关注、主页/学术索引、近 6 个月论文追踪、候选论文加入 Library/Card、忽略不感兴趣论文与趋势总结，并在页面顶部推荐相关学者、课题组和机构；当前关注对象改为浮动 key-value 卡片，便于扫读 authors / institutions / keywords / homepage / notes
-- 子页面统一视觉设计：每个功能页都有 workflow cards、状态摘要、玻璃质感表单/表格/卡片和更清晰的数据模块分区
+- 子页面统一视觉设计：每个功能页都有 workflow cards、状态摘要、玻璃质感表单/表格/卡片和更清晰的数据模块分区。
 
 ## 3. 创新点
 ### 3.1 端到端科研调研工作流
 现有工具通常只覆盖单点功能，例如 PDF 问答、论文搜索或报告生成。用户在实际调研中往往需要在多个工具之间来回切换，导致上下文断裂、流程不可追踪、复现实验和演示成本较高。
 
-ResearchPilot 将 topic-based paper discovery、arXiv 搜索、PDF 下载与入库、hybrid retrieval、RAG QA、paper cards、comparison table、literature review、claim verification、review rewriting、research ideas 与 watchlist personalization 组织为统一流程。
+ResearchPilot 将 topic-based Research Discovery、CCF 会议/期刊搜集、开放学术源检索、PDF 下载与入库、hybrid retrieval、RAG QA、paper cards、paper labels、comparison table、literature review、claim verification、review rewriting、research ideas、watchlist tracking 与 workspace chat 组织为统一流程。
 
 该设计的核心价值在于把科研调研过程从“零散工具调用”转变为“可追踪、可复用、可展示”的闭环流程，便于课程项目汇报、复盘和后续扩展。
 
 对应模块或页面：首页、Research Discovery、Upload PDFs、Ask Papers、Paper Cards、Literature Review、Research Ideas、Watchlist、Workspace Chat、Current Library。
-Workspace Chat 用于对齐本地 agent 端的 collection / report / paper-card 工作流；Local Agent Bridge 使网页端也能委托 Codex/OpenCode 生成内容。
+本地 agent 端通过 `research-pilot` skill 调用同一套项目能力；网页端通过 Local Agent Bridge 把报告、双语卡片、标签和 workspace chat 等生成任务委托给 Codex/OpenCode，或落盘为 queue task。
 
 ### 3.2 声明级引用验证（Claim-level Citation Verification）
 许多 RAG 系统能够生成带 citation 的回答或综述，但 citation 本身并不必然意味着该证据真实支持对应事实声明；在复杂场景下，仍可能出现证据不足、推断过强或语义错配。
@@ -58,11 +54,11 @@ ResearchPilot 在生成 literature review 之后，将综述拆解为 atomic fac
 - 系统支持 `strict / balanced / lenient` 三种 verification mode，默认使用 `balanced`。
 - `strict` 更强调“直接且完整证据”，`lenient` 更倾向把边界情况标记为 `weakly_supported`，`balanced` 处于中间。
 - 对背景性/动机性 claim，`balanced` 和 `lenient` 允许基于 evidence 的核心语义支持进行判断，不要求逐字匹配；但对数字、实验结果和比较性 claim 仍保持严格。
-- `Evidence chunks per claim` 控制的是每条 claim 检索的证据数量，并不是严格度本身。
+- `Evidence chunks per claim` 控制每条 claim 检索的证据数量；严格度由 verification mode 控制。
 - `top_k` 越高通常能提供更多候选证据，但也可能引入噪声，需要结合具体任务权衡。
 - claim extraction 会保留“来源：...”信息，并将来源提示写入 `source_hints`。
 - 系统支持 source-aware evidence retrieval：当 claim 中包含“来源：论文标题”或“source: title”时，会优先基于 `paper card title / paper_id / chunk title` 等 metadata 做来源匹配。
-- 系统采用 precision-first source matching；如果来源标题无法高置信匹配，不会强行匹配，而是回退到 diverse evidence retrieval。
+- 系统采用 precision-first source matching；来源标题无法高置信匹配时，会回退到 diverse evidence retrieval。
 - 例如会避免把 “Semantic Program Alignment for Equivalence Checking” 误匹配到 “Direct Construction of Program Alignment Automata for Equivalence Checking”。
 - 默认启用 source-only 模式：当来源论文可匹配时，仅使用该来源论文证据进行验证；若来源证据不足，再从来源论文已入库 chunks 中补充。
 - 当 claim 命中单一来源论文且 source-only 开启时，系统只从该来源论文取证据，并允许尽量取满 `Evidence chunks per claim (top_k)`。
@@ -93,7 +89,7 @@ ResearchPilot 先将每篇论文抽取为 paper card，包括 problem、method�
 ### 3.5 个性化科研关注与研究想法生成
 传统论文搜索主要依赖 topic keywords，难以反映用户长期关注的 professor、research group、institution 或 keywords，也难把“关注偏好”直接转化为可执行的后续研究方向。
 
-ResearchPilot 支持用户定义 watchlist，并在 arXiv 搜索结果中计算 `watchlist_score`、`matched_watch_items` 和 `match_reasons`，实现个性化排序与解释；同时基于 paper cards、original/revised review、claim verification signals 以及 weak/unsupported claims 生成候选 future research ideas。
+ResearchPilot 支持用户定义 watchlist，并在文献发现结果中计算 `watchlist_score`、`matched_watch_items` 和 `match_reasons`，实现个性化排序与解释；同时基于 paper cards、original/revised review、claim verification signals 以及 weak/unsupported claims 生成候选 future research ideas。
 
 该设计使系统从一次性检索工具扩展为个性化科研跟踪与选题辅助工具，增强持续调研场景下的实用性。
 
@@ -164,7 +160,9 @@ streamlit run app/streamlit_app.py --server.fileWatcherType none
 - `--server.fileWatcherType none` 用于减少 Streamlit file watcher 扫描可选依赖时可能出现的 `torchvision` 警告。
 - 停止脚本会优先使用 PID 文件；如果 PID 文件不存在，会只匹配本项目的 `streamlit app/streamlit_app.py` 进程，避免误停其它服务。
 
-### 4.5 OpenCode Agent / Skills 测试
+### 4.5 本地 Agent Skill 与网页桥接
+除了网页端，项目还提供本地 agent 可调用的 `research-pilot` skill。Codex/OpenCode 可以直接使用这些工具完成文献发现、PDF 入库、证据检索、paper card、comparison table、综述准备、claim verification 准备、research ideas 和 watchlist tracking。
+
 本项目已提供 OpenCode 可发现的本地 skill 和 tools：
 - Skill：`.agents/skills/research-pilot/SKILL.md`
 - Tools：`.opencode/tools/researchpilot.ts`
@@ -194,13 +192,18 @@ python -m researchpilot.agent_cli retrieve '{"query":"claim verification evidenc
 - OpenCode：`opencode run --dir <project> --agent research-pilot --file <prompt.md>`
 - Queue：把任务写入 `data/outputs/agent_bridge/tasks/<task_id>/prompt.md`，之后可由 Codex/OpenCode 读取并完成。
 
+网页端以下位置可以选择本地 agent bridge：
+- `Research Discovery`：生成 research report 时选择 `codex`、`opencode` 或 `queue`。
+- `Paper Cards`：生成双语 card 或执行 agent-assisted paper labeling 时选择本地 agent。
+- `Workspace Chat`：回答、比较论文或草拟报告时选择 `codex`、`opencode` 或 `queue`。
+
 如需接入其它本地 agent，可设置：
 
 ```env
 RESEARCHPILOT_AGENT_COMMAND="your-agent-command-that-reads-prompt-from-stdin"
 ```
 
-进入 OpenCode 后可切到 `research-pilot` agent，或让 agent 先调用 `researchpilot_status`，再按 `search_arxiv -> download_arxiv_result -> ingest_pdf -> build_paper_cards -> literature_review -> verify_review -> rewrite_review -> research_ideas` 跑完整闭环。
+进入 OpenCode 后可切到 `research-pilot` agent，或让 agent 先调用 `researchpilot_status`，再按 `collect_venue_papers -> metadata_paper_cards -> download_pdf / ingest_pdf -> build_paper_cards -> literature_review -> verify_review -> rewrite_review -> research_ideas` 跑完整闭环。
 
 如果要让 Codex 全局发现该 skill，可将 `.codex/skills/research-pilot/` 同步到 `$CODEX_HOME/skills/research-pilot/`。
 
@@ -220,8 +223,8 @@ python -m researchpilot.agent_cli comparison_table '{"paper_ids":["2604.01851"],
 
 对应 OpenCode tools 已暴露为 `researchpilot_plan_venue_collection`、`researchpilot_collect_venue_papers`、`researchpilot_prepare_venue_paper_summary`、`researchpilot_metadata_paper_cards`、`researchpilot_prepare_paper_card`、`researchpilot_save_paper_card`、`researchpilot_prepare_literature_review`、`researchpilot_prepare_review_verification`、`researchpilot_save_claim_verification`、`researchpilot_prepare_research_ideas` 和 `researchpilot_save_artifact`。
 
-#### CCF 会议/期刊论文搜集
-对于“不局限于 arXiv”的科研方向调研，可以先让 agent 规划 CCF 相关会议/期刊，再从 arXiv、OpenReview、OpenAlex、Semantic Scholar 等来源搜集论文：
+#### 统一文献发现与 CCF 会议/期刊搜集
+科研方向调研可以先让 agent 根据 topic 在 CCF 标准中规划相关会议/期刊，再从对应会议/期刊网站和开放学术检索源搜集论文：
 
 ```bash
 python -m researchpilot.agent_cli plan_venue_collection '{"topic":"形式化验证与大模型结合","max_venues":12}'
@@ -232,7 +235,7 @@ python -m researchpilot.agent_cli metadata_paper_cards '{"max_cards":10}'
 
 `prepare_venue_paper_summary` 返回元数据、摘要、来源 URL 和写作指令，Codex/OpenCode 可以用自身订阅生成中文调研报告，再通过 `save_artifact` 落盘。若 `.env` 已配置，也可以直接调用 `venue_paper_summary` 走后端 API fallback。网页端的 Research Discovery 使用同一套采集逻辑：`.env` 配好时用后端 LLM 生成报告，否则会生成一个确定性的元数据报告预览。
 
-注意：结果中的 `target_venue` 是系统按 CCF 规划去检索的 venue，`venue` 是 arXiv/OpenReview/OpenAlex/Semantic Scholar 报告的实际来源；`collection_scope: "arxiv"` 表示这是 arXiv 主题检索命中；`collection_scope: "broad_openalex"` 表示这是相关 OpenAlex 命中，不应表述为已发表在对应 CCF venue；`collection_scope: "broad_semantic_scholar"` 表示这是 Semantic Scholar 主题检索命中，需要人工确认 venue。
+注意：结果中的 `target_venue` 是系统按 CCF 规划去检索的会议/期刊，`venue` 是学术源返回的实际来源；`collection_scope: "arxiv"` 表示这是主题检索命中；`collection_scope: "broad_openalex"` 表示这是相关 OpenAlex 命中，需要人工确认发表来源；`collection_scope: "broad_semantic_scholar"` 表示这是 Semantic Scholar 主题检索命中，需要人工确认 venue/source。
 
 Codex skill 的渐进式说明在 `.codex/skills/research-pilot/references/agent-native-mode.md`；OpenCode skill 的对应说明在 `.agents/skills/research-pilot/references/agent-native-mode.md`。
 
@@ -276,7 +279,7 @@ research-pilot/
 ## 6. Streamlit 页面与功能映射
 当前主要页面（tabs）：
 1. `首页`：中文能力介绍、功能导航、共享数据模块概览和 Local Agent Bridge 状态。
-2. `Research Discovery`：统一 topic 入口；开启 `只看 arXiv 结果` 时只返回 arXiv，关闭时默认聚合会议、期刊、arXiv、OpenReview、OpenAlex、Semantic Scholar 等来源。
+2. `Research Discovery`：统一 topic 入口；默认按 CCF 相关会议/期刊和开放学术源聚合候选论文，也可以通过 `只看 arXiv 结果` 开关临时缩小来源范围。
 3. `Watchlist`：展示相关学者/课题组/机构推荐，管理关注对象（professor / group / institution / keywords）；对学者/机构/课题组提供主页索引、近 6 个月论文追踪、候选论文加入 Library/Card、忽略不感兴趣论文和趋势总结。
 4. `Upload PDFs`：本地 PDF 上传、解析、切块并入库。
 5. `Ask Papers`：基于混合检索的 citation-grounded RAG QA。
@@ -295,7 +298,7 @@ research-pilot/
 
    ![ResearchPilot 首页](./imgs/readme-home-20260518.png)
 
-2. 在 `Research Discovery` 中输入 topic。默认模式会规划 CCF venue 并聚合会议/期刊、arXiv、OpenReview、OpenAlex、Semantic Scholar；如只想复现旧版 arXiv demo，可打开 `只看 arXiv 结果`。
+2. 在 `Research Discovery` 中输入 topic。默认模式会规划 CCF 相关会议/期刊并聚合多个学术来源；如需要快速查新，可打开 `只看 arXiv 结果` 临时缩小来源范围。
 
    ![Research Discovery](./imgs/readme-research-discovery-20260518.png)
 
@@ -359,14 +362,45 @@ python scripts/smoke_rag_qa.py data/uploads/example.pdf "这篇论文主要解�
 python scripts/smoke_paper_card.py data/uploads/example.pdf
 ```
 
-- arXiv search
+- Research Discovery 规划与 collection schema（不访问外网）
+```bash
+python scripts/smoke_discovery_collection.py "形式化验证与大模型代码生成"
+```
+
+- Research Discovery 轻量来源过滤：arXiv 查询
 ```bash
 python scripts/smoke_arxiv_search.py "program equivalence checking semantic alignment" --max-results 5
 ```
 
-- arXiv search + 下载第一篇 PDF
+- Research Discovery 轻量来源过滤：arXiv 查询并下载第一篇 PDF
 ```bash
 python scripts/smoke_arxiv_search.py "program equivalence checking semantic alignment" --max-results 5 --download-first
+```
+
+- Metadata paper card
+```bash
+python scripts/smoke_metadata_cards.py
+```
+
+- Paper labels
+```bash
+python scripts/smoke_paper_labels.py
+```
+
+- Watchlist tracking
+```bash
+python scripts/smoke_watchlist_tracking.py
+```
+
+- Local Agent Bridge queue
+```bash
+python scripts/smoke_agent_bridge.py
+```
+
+- Streamlit start / stop scripts
+```bash
+./scripts/start_research_pilot.sh
+./scripts/stop_research_pilot.sh
 ```
 
 ## 9. Third-party 参考说明
@@ -380,14 +414,17 @@ python scripts/smoke_arxiv_search.py "program equivalence checking semantic alig
 - `ScholarLens`
 
 ## 10. 已知局限与后续工作
-- 当前 watchlist 推荐主要来自内置 seed graph、collection 作者频次和字符串匹配；后续可接 Semantic Scholar / OpenAlex / AMiner author-institution graph。
-- claim-level citation verification 结果依赖检索质量与 LLM judgment，存在不确定性。
-- PDF parsing 对复杂公式、图表和表格结构仍有限。
-- research ideas 为候选研究假设，不应直接视作可验证结论。
-- Paper cards、workspace reports、agent bridge tasks 等已经落盘；但部分前端选择、临时 collection 和正在编辑的 draft 仍依赖 `session_state`（内存态），应用重启后可能需要重新加载或重新生成。
-- Local Agent Bridge 调用 Codex/OpenCode CLI 时依赖本机 CLI 是否已安装、登录和可访问；`.env` 后端逻辑仍保留作为 fallback。
+- CCF 会议/期刊规划依赖本地 compact seed 和关键词匹配，`ccf_rank` 用作调研提示；正式研究报告中仍建议核对 CCF 官方目录和会议/期刊官网。
+- Research Discovery 依赖开放学术源的 API 可用性、速率限制和元数据质量。OpenReview、OpenAlex、Semantic Scholar、arXiv 与 Google Scholar follow-up 覆盖范围不同，系统会保留 source/scope/warning，用户需要确认关键论文的实际发表来源。
+- Metadata paper cards 基于标题、摘要和检索元数据生成，用于候选筛选；方法、实验结果和局限性需要下载/入库全文后再生成证据支撑的完整 card。
+- Watchlist tracking 目前结合内置推荐、collection 作者频次、主页索引链接、Semantic Scholar/OpenAlex 检索和字符串匹配；更精确的 author-institution disambiguation、AMiner 风格学者图谱和自动主页抓取仍可继续增强。
+- claim-level citation verification 依赖本地检索质量、paper card 来源提示和 LLM judgment。系统会给出 evidence 与 supported/weakly_supported/unsupported 状态，用户仍需人工检查关键 claim。
+- PDF parsing 对复杂公式、图表、表格、双栏排版和扫描件支持有限；图表级证据抽取、公式结构化和 OCR 可作为后续扩展。
+- Paper labels、paper cards、workspace reports、watchlist tracking、agent bridge tasks 等已经落盘；部分前端选择、临时编辑草稿和 Streamlit 会话态仍依赖 `session_state`，应用重启后可能需要重新选择或重新生成。
+- Local Agent Bridge 依赖本机 Codex/OpenCode CLI 是否安装、登录、可访问以及模型额度；`.env` 后端逻辑仍保留为自动批处理和 fallback。
+- Research ideas 是基于当前 cards/review/verification 的候选假设，需要进一步文献核查、实验设计和导师/同行评审后再进入正式研究计划。
 
 ## 11. 课程提交说明（建议）
-- 建议在报告中明确：ResearchPilot 的贡献是工程集成与流程设计，而非宣称提出全新底层算法。
+- 建议在报告中明确：ResearchPilot 的贡献重点是工程集成、工作流设计和可追踪科研调研体验。
 - 建议附上一次完整 demo 路径（从 search 到 verify-rewrite 再到 ideas）。
 - 建议结合 Smoke Tests 截图或日志，说明各模块已可独立运行。
